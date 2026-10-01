@@ -1,0 +1,192 @@
+{
+  "_comment": "規則式錯字修正表。只收「幾乎不可能是正確用法」的字串，避免誤改。可用 --fixes 指向自己的檔案來擴充（會與這份合併，同 find 以使用者的為準）。",
+  "rules": [
+    {
+      "find": "因該",
+      "replace": "應該"
+    },
+    {
+      "find": "應改",
+      "replace": "應該"
+    },
+    {
+      "find": "以經",
+      "replace": "已經"
+    },
+    {
+      "find": "在次",
+      "replace": "再次"
+    },
+    {
+      "find": "在度",
+      "replace": "再度"
+    },
+    {
+      "find": "在來",
+      "replace": "再來",
+      "not_followed_by": "米"
+    },
+    {
+      "find": "一但",
+      "replace": "一旦"
+    },
+    {
+      "find": "倒底",
+      "replace": "到底"
+    },
+    {
+      "find": "決對",
+      "replace": "絕對"
+    },
+    {
+      "find": "即然",
+      "replace": "既然"
+    },
+    {
+      "find": "機乎",
+      "replace": "幾乎"
+    },
+    {
+      "find": "基乎",
+      "replace": "幾乎"
+    },
+    {
+      "find": "直得",
+      "replace": "值得"
+    },
+    {
+      "find": "必須品",
+      "replace": "必需品"
+    },
+    {
+      "find": "裡解",
+      "replace": "理解"
+    },
+    {
+      "find": "因響",
+      "replace": "影響"
+    },
+    {
+      "find": "表答",
+      "replace": "表達"
+    },
+    {
+      "find": "勾通",
+      "replace": "溝通"
+    },
+    {
+      "find": "竟爭",
+      "replace": "競爭"
+    },
+    {
+      "find": "負雜",
+      "replace": "複雜"
+    },
+    {
+      "find": "睏難",
+      "replace": "困難"
+    },
+    {
+      "find": "精歷",
+      "replace": "經歷"
+    },
+    {
+      "find": "份享",
+      "replace": "分享"
+    },
+    {
+      "find": "紀得",
+      "replace": "記得"
+    },
+    {
+      "find": "鍊習",
+      "replace": "練習"
+    },
+    {
+      "find": "舉列來說",
+      "replace": "舉例來說"
+    },
+    {
+      "find": "按步就班",
+      "replace": "按部就班"
+    },
+    {
+      "find": "一摸一樣",
+      "replace": "一模一樣"
+    },
+    {
+      "find": "不加思索",
+      "replace": "不假思索"
+    },
+    {
+      "find": "迫不急待",
+      "replace": "迫不及待"
+    },
+    {
+      "find": "措手不急",
+      "replace": "措手不及"
+    },
+    {
+      "find": "相輔相承",
+      "replace": "相輔相成"
+    },
+    {
+      "find": "穿流不息",
+      "replace": "川流不息"
+    },
+    {
+      "find": "美侖美奐",
+      "replace": "美輪美奐"
+    },
+    {
+      "find": "不進然",
+      "replace": "不盡然"
+    },
+    {
+      "find": "興緻",
+      "replace": "興致"
+    },
+    {
+      "find": "恢心",
+      "replace": "灰心"
+    },
+    {
+      "find": "想儘辦法",
+      "replace": "想盡辦法"
+    },
+    {
+      "find": "不盡辦法",
+      "replace": "想盡辦法"
+    },
+    {
+      "find": "尤其實",
+      "replace": "尤其是"
+    },
+    {
+      "find": "事實上來說",
+      "replace": "事實上"
+    },
+    {
+      "find": "所已",
+      "replace": "所以"
+    },
+    {
+      "find": "如果說說",
+      "replace": "如果說"
+    },
+    {
+      "find": "的時候候",
+      "replace": "的時候"
+    }
+  ],
+  "style": [
+    {
+      "find": "部份",
+      "replace": "部分"
+    },
+    {
+      "find": "其它",
+      "replace": "其他"
+    }
+  ]
+}
