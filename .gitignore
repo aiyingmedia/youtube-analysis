@@ -9,3 +9,6 @@ build/
 out/
 .env
 .ruff_cache/
+
+# git bundle 備份（含 repo 自身歷史，不應提交）
+*.bundle
