@@ -11,8 +11,16 @@ from ytreel.analyze import (
     _postcheck,
     analyze,
 )
-from ytreel.models import Analysis, Beat, KeyPoint, Quote, ReelScript, SectionNotes, SectionNotesList
-from ytreel.render import render_report, render_reel, render_scripts_only
+from ytreel.models import (
+    Analysis,
+    Beat,
+    KeyPoint,
+    Quote,
+    ReelScript,
+    SectionNotes,
+    SectionNotesList,
+)
+from ytreel.render import render_reel, render_report, render_scripts_only
 from ytreel.transcript import Segment, Transcript
 from ytreel.youtube import VideoInfo
 

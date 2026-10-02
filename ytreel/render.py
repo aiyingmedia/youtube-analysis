@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 from ytreel.analyze import AnalyzeReport
 from ytreel.correct import CleanReport
 from ytreel.models import Analysis, ReelScript

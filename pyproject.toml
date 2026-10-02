@@ -14,7 +14,7 @@ dependencies = [
 asr = ["faster-whisper>=1.0"]
 zh = ["opencc-python-reimplemented>=0.1.7"]
 all = ["faster-whisper>=1.0", "opencc-python-reimplemented>=0.1.7"]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
 ytreel = "ytreel.cli:main"
@@ -28,3 +28,10 @@ packages = ["ytreel"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+# F = pyflakes（未使用的 import、未定義的名稱等真錯誤）
+# E9 = 語法與執行期錯誤
+# I  = import 排序
+# 刻意不開格式類規則：這個專案不跑 formatter，開了只會製造雜訊。
+select = ["F", "E9", "I"]

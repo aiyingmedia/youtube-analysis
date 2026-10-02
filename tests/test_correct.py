@@ -1,8 +1,8 @@
 import pytest
 
 from ytreel.correct import (
-    CleanReport,
     _SIMPLIFIED_PROBE,
+    CleanReport,
     apply_rules,
     chunk_segments,
     llm_proofread,

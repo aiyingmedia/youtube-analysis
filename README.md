@@ -1,5 +1,7 @@
 # ytreel
 
+[![CI](https://github.com/aiyingmedia/youtube-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/aiyingmedia/youtube-analysis/actions/workflows/ci.yml)
+
 輸入 YouTube 連結，自動產出**摘要**、**重點整理**，以及 **3～5 支有論點、有精華的 IG Reel 口播稿**。
 
 沒有 CC 字幕的影片，會自動改用**語音辨識（Whisper）＋改錯字**再做分析。
@@ -141,7 +143,9 @@ ytreel <url> --llm none
 
 ```bash
 pip install -e '.[dev,all]'
-pytest                      # 117 個測試，全部離線
+pytest                      # 120 個測試，全部離線
+ruff check .                # lint
 ```
 
 測試不需要網路也不需要 API key：模型呼叫用假 client，YouTube 用字幕檔 fixture。
+每次 push 到 main 與每個 PR 都會在 Python 3.10 / 3.12 上自動跑一次。
