@@ -25,8 +25,13 @@ out/XXXXXXXXXXX/
 ```bash
 pip install -e .                 # 基本功能（有 CC 字幕的影片）
 pip install -e '.[all]'          # 加上語音辨識與簡轉繁
+brew install deno                # 必要：yt-dlp 解析 YouTube 需要 JS 執行環境
 brew install ffmpeg              # 語音辨識需要（Linux: apt install ffmpeg）
 ```
+
+**為什麼要裝 deno**：YouTube 的播放驗證要跑 JavaScript 才解得開。少了它，yt-dlp
+只能用降級模式，結果是格式缺漏、串流 403，**連字幕都可能被漏判成「沒有字幕」**。
+已經有 Node.js 或 Bun 的話也可以，工具會自動偵測並使用。
 
 接著設定模型憑證，二選一：
 
@@ -109,6 +114,9 @@ ytreel <url> --cookies-from-browser chrome
 ytreel <url> --subtitle-file my.vtt
 ytreel <url> --audio-file my.m4a
 
+# 從 YouTube「顯示轉錄稿」複製存成 .txt（要保留時間碼）
+ytreel <url> --subtitle-file transcript.txt
+
 # 不叫模型，只輸出逐字稿與提示詞包（prompt_system.txt / prompt_user.md / prompt_schema.json）
 ytreel <url> --llm none
 ```
@@ -119,12 +127,29 @@ ytreel <url> --llm none
 
 | 用途 | 網域 |
 | --- | --- |
-| 抓字幕與音訊 | `youtube.com`、`googlevideo.com` |
+| 抓字幕與音訊 | `youtube.com`、`*.youtube.com`、`*.googlevideo.com` |
 | 呼叫模型（`--llm api`） | `api.anthropic.com` |
-| 下載 Whisper 模型（第一次語音辨識） | `huggingface.co` |
+| 下載 Whisper 模型（第一次語音辨識） | `huggingface.co`、`*.huggingface.co`、`*.hf.co` |
 
-如果你在受限網路（例如企業 proxy 或雲端沙箱）執行，`yt-dlp` 會出現
-`Tunnel connection failed: 403`，工具會直接告訴你是網路政策擋掉了。
+設定允許清單時要注意**子網域**：實際連線的是 `www.youtube.com`、
+`rr1---sn-xxx.googlevideo.com`（影片串流）、`us.aws.cdn.hf.co`（模型檔）這類主機，
+只寫 `youtube.com` 是不會放行它們的，要寫成 `*.youtube.com`。
+
+網路被擋時 `yt-dlp` 會出現 `Tunnel connection failed: 403`，工具會直接說明是網路政策問題。
+
+## YouTube 說「請確認你不是機器人」
+
+在雲端主機、資料中心或 VPN 上執行時，YouTube 常會把流量判定成機器人，要求登入。
+這跟網路權限無關 —— 連得到 YouTube，但它拒絕給資料。工具遇到時會明確告訴你，
+並提醒：**這種狀態下拿不到字幕清單，所以「沒有找到字幕」不一定是真的沒有。**
+
+解法（擇一）：
+
+1. **換到一般家用網路執行**。最可靠。
+2. **貼逐字稿**：在 YouTube 影片說明欄點「顯示轉錄稿」，全選複製存成 `.txt`，
+   用 `--subtitle-file transcript.txt` 匯入。時間碼要保留，報告裡的連結全靠它。
+3. **`--cookies-from-browser chrome`**：用瀏覽器的 YouTube 登入狀態。這等於把帳號
+   的登入權限交給 yt-dlp，建議用分身帳號 —— YouTube 可能把用來下載的帳號標記為異常。
 
 ## 設計上的幾個選擇
 
@@ -143,7 +168,7 @@ ytreel <url> --llm none
 
 ```bash
 pip install -e '.[dev,all]'
-pytest                      # 120 個測試，全部離線
+pytest                      # 141 個測試，全部離線
 ruff check .                # lint
 ```
 
