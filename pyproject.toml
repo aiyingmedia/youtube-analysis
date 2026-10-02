@@ -7,7 +7,9 @@ requires-python = ">=3.10"
 dependencies = [
     "anthropic>=1.0",
     "pydantic>=2.0",
-    "yt-dlp>=2024.1.1",
+    # [default] 會帶入 yt-dlp-ejs（YouTube 播放驗證的解題腳本），缺了它格式會缺、
+    # 字幕會漏判。YouTube 改版頻繁，太舊的 yt-dlp 基本上無法使用。
+    "yt-dlp[default]>=2026.8.19",
 ]
 
 [project.optional-dependencies]

@@ -181,6 +181,50 @@ def parse_json3(content: str) -> list[Segment]:
     return _dedupe(raw)
 
 
+# 「顯示轉錄稿」複製出來的時間碼：0:05、12:30、1:02:03
+_PLAIN_TS = re.compile(r"^\s*(\d{1,2}(?::\d{2}){1,2})\s*(.*)$")
+
+
+class NoTimestampsError(ValueError):
+    """純文字逐字稿裡沒有任何時間碼。"""
+
+
+def parse_plain_transcript(content: str) -> list[Segment]:
+    """解析從 YouTube「顯示轉錄稿」複製下來的文字。
+
+    支援兩種排法：時間碼獨立一行、文字在下一行；或時間碼和文字在同一行。
+    第一個時間碼之前的行（例如影片標題）會被略過。
+
+    沒有任何時間碼就直接報錯，不用字數去估：報告裡每個重點與 Reel 取材
+    都會連回影片的時間點，估出來的時間碼會讓那些連結全部指錯地方。
+    """
+    entries: list[tuple[float, list[str]]] = []
+    for raw in content.replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        m = _PLAIN_TS.match(line)
+        if m:
+            entries.append((parse_stamp(m.group(1)), [m.group(2)] if m.group(2) else []))
+        elif entries:
+            entries[-1][1].append(line)
+    if not entries:
+        raise NoTimestampsError(
+            "文字檔裡找不到時間碼。請從 YouTube「顯示轉錄稿」複製，並保留每段前面的時間碼。"
+        )
+    segs: list[Segment] = []
+    for i, (start, parts) in enumerate(entries):
+        text = _clean_line(" ".join(parts))
+        if not text:
+            continue
+        if i + 1 < len(entries):
+            end = entries[i + 1][0]
+        else:
+            end = start + max(2.0, len(text) / 4)  # 最後一段沒有下一個時間碼可參考
+        segs.append(Segment(start, end, text))
+    return segs
+
+
 def parse_subtitle_file(path, content: str | None = None) -> list[Segment]:
     import pathlib
 
@@ -192,7 +236,9 @@ def parse_subtitle_file(path, content: str | None = None) -> list[Segment]:
             return parse_json3(content)
         except (json.JSONDecodeError, KeyError):
             pass
-    return parse_vtt(content)
+    if "-->" in content:
+        return parse_vtt(content)  # WebVTT 與 SRT 都靠 --> 標示時間區間
+    return parse_plain_transcript(content)
 
 
 def merge_segments(

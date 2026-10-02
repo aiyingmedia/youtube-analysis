@@ -1,11 +1,15 @@
 from pathlib import Path
 
+import pytest
+
 from ytreel.transcript import (
+    NoTimestampsError,
     Segment,
     Transcript,
     format_stamp,
     merge_segments,
     parse_json3,
+    parse_plain_transcript,
     parse_stamp,
     parse_subtitle_file,
     parse_vtt,
@@ -89,3 +93,55 @@ def test_transcript_metrics():
     t = Transcript(segments=[Segment(0, 2, "四個字"), Segment(2, 9, "兩字")])
     assert t.char_count == 5
     assert t.duration == 9
+
+
+# --- 從 YouTube「顯示轉錄稿」複製的純文字 -------------------------------
+
+def test_plain_transcript_timestamp_on_own_line():
+    content = "0:00\n大家好\n0:05\n今天要聊生育率\n"
+    segs = parse_plain_transcript(content)
+    assert [(s.start, s.text) for s in segs] == [(0, "大家好"), (5, "今天要聊生育率")]
+    assert segs[0].end == 5  # 結束時間取下一段的開始
+
+
+def test_plain_transcript_timestamp_inline():
+    segs = parse_plain_transcript("0:00 大家好\n0:05 今天要聊\n")
+    assert [s.text for s in segs] == ["大家好", "今天要聊"]
+
+
+def test_plain_transcript_handles_hours():
+    assert parse_plain_transcript("1:02:03\n最後")[0].start == 3723
+
+
+def test_plain_transcript_skips_lines_before_first_timestamp():
+    """複製時常常連影片標題一起帶到。"""
+    segs = parse_plain_transcript("影片標題\n0:00\n內容")
+    assert [s.text for s in segs] == ["內容"]
+
+
+def test_plain_transcript_joins_wrapped_lines():
+    segs = parse_plain_transcript("0:00\n第一行\n接著第二行\n0:09\n下一段")
+    assert segs[0].text == "第一行 接著第二行"
+
+
+def test_plain_transcript_without_timestamps_is_rejected():
+    """不能用字數估時間碼：報告的時間碼連結全靠它。"""
+    with pytest.raises(NoTimestampsError):
+        parse_plain_transcript("只有文字\n沒有任何時間碼")
+
+
+def test_numbers_without_colon_are_text_not_timestamps():
+    segs = parse_plain_transcript("0:00\n2025\n年生育率")
+    assert segs[0].text == "2025 年生育率"
+
+
+def test_txt_file_routes_to_plain_parser(tmp_path):
+    f = tmp_path / "transcript.txt"
+    f.write_text("0:00\n大家好\n0:04\n再見", encoding="utf-8")
+    assert [s.text for s in parse_subtitle_file(f)] == ["大家好", "再見"]
+
+
+def test_vtt_without_extension_still_detected(tmp_path):
+    f = tmp_path / "subs.txt"
+    f.write_text("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n字幕\n", encoding="utf-8")
+    assert [s.text for s in parse_subtitle_file(f)] == ["字幕"]

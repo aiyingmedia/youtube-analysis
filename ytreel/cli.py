@@ -27,7 +27,12 @@ from ytreel.render import (
     render_scripts_only,
     render_transcript_file,
 )
-from ytreel.transcript import Transcript, merge_segments, parse_subtitle_file
+from ytreel.transcript import (
+    NoTimestampsError,
+    Transcript,
+    merge_segments,
+    parse_subtitle_file,
+)
 from ytreel.urls import InvalidYouTubeURL, canonical_url, extract_video_id
 from ytreel.youtube import (
     DEFAULT_SUB_LANGS,
@@ -35,6 +40,7 @@ from ytreel.youtube import (
     YtDlpError,
     download_audio,
     download_subtitle,
+    has_js_runtime,
     pick_subtitle_lang,
     probe,
 )
@@ -70,7 +76,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=",".join(DEFAULT_SUB_LANGS),
         help="字幕語言偏好，逗號分隔（預設繁中優先）",
     )
-    g.add_argument("--subtitle-file", type=Path, help="直接使用本機字幕檔（.vtt/.srt/.json3）")
+    g.add_argument(
+        "--subtitle-file",
+        type=Path,
+        help="直接使用本機字幕檔：.vtt/.srt/.json3，或從 YouTube「顯示轉錄稿」複製存成的 .txt",
+    )
     g.add_argument(
         "--subtitle-kind",
         choices=("detect", "manual_cc", "auto_cc"),
@@ -193,6 +203,12 @@ def main(argv: list[str] | None = None) -> int:
     if glossary:
         log(f"● 專有名詞 {len(glossary)} 個：{'、'.join(glossary[:8])}")
 
+    if not (args.subtitle_file or args.audio_file) and not has_js_runtime():
+        log(
+            "⚠ 找不到 JavaScript 執行環境（deno / node / bun）。yt-dlp 會用降級模式解析 YouTube，"
+            "可能抓不到字幕或音訊。建議安裝 deno：brew install deno"
+        )
+
     # --- 1. 影片資訊 ----------------------------------------------------
     log(f"● 讀取影片資訊：{video_id}")
     try:
@@ -213,6 +229,9 @@ def main(argv: list[str] | None = None) -> int:
     except (YtDlpError, LLMError) as exc:
         print(f"錯誤：{exc}", file=sys.stderr)
         return 1
+    except NoTimestampsError as exc:
+        print(f"錯誤：{exc}", file=sys.stderr)
+        return 2
     except RuntimeError as exc:  # ASRUnavailable 等
         print(f"錯誤：{exc}", file=sys.stderr)
         return 1
@@ -379,7 +398,7 @@ def _get_transcript(args, info: VideoInfo, url: str, rawdir: Path, glossary, yt_
                 )
             log("⚠ 字幕檔解析不出內容，改用語音辨識")
         else:
-            log("● 這支影片沒有 CC 字幕，改用語音辨識")
+            log("● 沒有找到 CC 字幕，改用語音辨識")
 
     log("● 下載音訊…")
     audio = download_audio(url, rawdir, yt_args)
