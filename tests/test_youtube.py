@@ -8,11 +8,11 @@ from ytreel.youtube import (
 )
 
 
-def _info(manual=None, auto=None, duration=0.0):
+def _info(manual=None, auto=None, duration=0.0, language=""):
     return VideoInfo(
         video_id="x", title="t", uploader="u", duration=duration, upload_date="",
         description="", webpage_url="", chapters=[],
-        manual_subs=manual or {}, auto_subs=auto or {}, raw={},
+        manual_subs=manual or {}, auto_subs=auto or {}, raw={}, language=language,
     )
 
 
@@ -173,3 +173,39 @@ def test_falls_back_to_path_binary(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", no_yt_dlp)
     monkeypatch.setattr("ytreel.youtube.shutil.which", lambda name: "/usr/local/bin/yt-dlp")
     assert ytdlp_command() == ["/usr/local/bin/yt-dlp"]
+
+
+# --- 自動字幕只取原始語言那一軌 ------------------------------------------
+
+def test_english_video_uses_original_track_not_machine_translated_chinese():
+    """英文影片的 zh-Hant 自動字幕是語音辨識再機器翻譯，錯誤疊兩層。"""
+    auto = {"zh-Hant": [], "zh-Hans": [], "en": [], "en-orig": [], "ja": []}
+    assert pick_subtitle_lang(_info(auto=auto, language="en-US")) == ("en-orig", "auto_cc")
+
+
+def test_orig_marker_wins_even_without_language_field():
+    auto = {"zh-Hant": [], "ko-orig": []}
+    assert pick_subtitle_lang(_info(auto=auto)) == ("ko-orig", "auto_cc")
+
+
+def test_chinese_video_uses_its_original_track():
+    auto = {"zh-Hant": [], "zh-Hans-orig": [], "en": []}
+    assert pick_subtitle_lang(_info(auto=auto, language="zh-CN"))[0] == "zh-Hans-orig"
+
+
+def test_falls_back_to_video_language_when_no_orig_marker():
+    auto = {"zh-Hant": [], "en": []}
+    assert pick_subtitle_lang(_info(auto=auto, language="en-US")) == ("en", "auto_cc")
+
+
+def test_falls_back_to_preferences_without_any_language_hint():
+    auto = {"en": [], "zh-Hant": []}
+    assert pick_subtitle_lang(_info(auto=auto))[0] == "zh-Hant"
+
+
+def test_manual_subs_still_win_over_original_auto_track():
+    """人工字幕（即使是人工翻譯）沒有語音辨識錯誤，仍然優先。"""
+    picked = pick_subtitle_lang(
+        _info(manual={"zh-Hant": []}, auto={"en-orig": []}, language="en-US")
+    )
+    assert picked == ("zh-Hant", "manual_cc")
