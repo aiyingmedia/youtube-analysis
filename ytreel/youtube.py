@@ -38,6 +38,7 @@ class VideoInfo:
     manual_subs: dict[str, list]
     auto_subs: dict[str, list]
     raw: dict
+    language: str = ""  # 影片原始語言，例如 en-US、zh-TW
 
     @property
     def duration_text(self) -> str:
@@ -128,7 +129,35 @@ def probe(url: str, extra_args: Sequence[str] = ()) -> VideoInfo:
         manual_subs=dict(data.get("subtitles") or {}),
         auto_subs=dict(data.get("automatic_captions") or {}),
         raw=data,
+        language=data.get("language") or "",
     )
+
+
+def _by_preference(table: dict, prefs: Sequence[str]) -> str:
+    available = {k.lower(): k for k in table}
+    for want in prefs:
+        if (hit := available.get(want.lower())) is not None:
+            return hit
+    # 偏好清單都沒中，退而取第一個中文，再退而取任何一個
+    for key in table:
+        if key.lower().startswith("zh"):
+            return key
+    return next(iter(table))
+
+
+def _original_auto_track(info: VideoInfo) -> str | None:
+    """找出自動字幕裡「原始語言」的那一軌。"""
+    for key in info.auto_subs:
+        if key.endswith("-orig"):  # yt-dlp 把原始的語音辨識軌標成 xx-orig
+            return key
+    lang = info.language.lower()
+    if not lang:
+        return None
+    available = {k.lower(): k for k in info.auto_subs}
+    for cand in (lang, lang.split("-")[0]):
+        if cand in available:
+            return available[cand]
+    return None
 
 
 def pick_subtitle_lang(
@@ -138,19 +167,16 @@ def pick_subtitle_lang(
 
     人工字幕一律優先於自動字幕，就算語言偏好順序較後面也一樣 —— 人工字幕
     沒有語音辨識錯誤，品質差距比語言差距大得多。
+
+    自動字幕只取影片原始語言的那一軌。YouTube 列出的其他上百種語言，都是
+    把同一份語音辨識結果再機器翻譯過來的（網址帶 tlang 參數），錯誤會疊
+    兩層。翻譯交給後面寫摘要的模型，比 YouTube 的機器翻譯好得多。
     """
-    for table, kind in ((info.manual_subs, "manual_cc"), (info.auto_subs, "auto_cc")):
-        if not table:
-            continue
-        available = {k.lower(): k for k in table}
-        for want in prefs:
-            if (hit := available.get(want.lower())) is not None:
-                return hit, kind
-        # 偏好清單都沒中，退而取第一個中文，再退而取任何一個
-        for key in table:
-            if key.lower().startswith("zh"):
-                return key, kind
-        return next(iter(table)), kind
+    if info.manual_subs:
+        return _by_preference(info.manual_subs, prefs), "manual_cc"
+    if info.auto_subs:
+        track = _original_auto_track(info) or _by_preference(info.auto_subs, prefs)
+        return track, "auto_cc"
     return None
 
 
